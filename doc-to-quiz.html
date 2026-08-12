@@ -1,0 +1,537 @@
+<!-- Doc → Quiz: exam-paper themed generator -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  :root{
+    --paper:#F2F0E6;
+    --paper-dark:#E9E5D6;
+    --ink:#1F2A24;
+    --ink-soft:#4B564E;
+    --board:#1B3A2F;
+    --board-light:#25503F;
+    --chalk:#EFEBDA;
+    --red:#B33A3A;
+    --red-dark:#8E2C2C;
+    --rule:#C9C3AE;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif:'Source Serif 4', Georgia, 'Times New Roman', serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:transparent;color:var(--ink);font-family:var(--serif);}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px;}
+
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--red);font-weight:600;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:'';width:18px;height:2px;background:var(--red);display:inline-block;}
+
+  h1{
+    font-family:var(--mono);font-weight:700;font-size:clamp(28px,4.4vw,42px);
+    line-height:1.1;margin:10px 0 12px;color:var(--board);letter-spacing:-.01em;
+  }
+  .lede{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:62ch;margin:0 0 34px;}
+
+  .card{
+    background:var(--paper);border:1px solid var(--rule);border-radius:2px;
+    padding:24px 24px 26px;margin-bottom:18px;position:relative;
+  }
+  .card::before{
+    content:attr(data-step);position:absolute;top:-13px;left:20px;background:var(--board);
+    color:var(--chalk);font-family:var(--mono);font-size:11px;font-weight:600;
+    letter-spacing:.08em;padding:3px 10px;border-radius:2px;
+  }
+  .card h2{font-family:var(--mono);font-size:15px;margin:6px 0 16px;color:var(--ink);letter-spacing:.02em;}
+
+  .tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--rule);}
+  .tab{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;padding:8px 14px;
+    cursor:pointer;color:var(--ink-soft);border-bottom:2px solid transparent;user-select:none;
+  }
+  .tab.active{color:var(--board);border-bottom-color:var(--red);font-weight:600;}
+
+  .dropzone{
+    border:1.5px dashed var(--rule);border-radius:2px;padding:26px 16px;text-align:center;
+    font-family:var(--mono);font-size:13px;color:var(--ink-soft);cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  .dropzone:hover, .dropzone.drag{border-color:var(--red);background:var(--paper-dark);}
+  .dropzone strong{color:var(--board);}
+  .filepill{
+    display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;
+    background:var(--board);color:var(--chalk);padding:6px 10px 6px 12px;border-radius:2px;margin-top:10px;
+  }
+  .filepill button{background:none;border:none;color:var(--chalk);cursor:pointer;font-family:var(--mono);opacity:.7;font-size:13px;}
+  .filepill button:hover{opacity:1;}
+
+  textarea{
+    width:100%;min-height:150px;resize:vertical;background:var(--paper-dark);
+    border:1px solid var(--rule);border-radius:2px;padding:12px 14px;font-family:var(--serif);
+    font-size:14.5px;line-height:1.5;color:var(--ink);
+  }
+  textarea:focus{outline:2px solid var(--red);outline-offset:-1px;}
+
+  .types{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:4px;}
+  .type-row{
+    display:flex;align-items:center;gap:10px;border:1px solid var(--rule);border-radius:2px;
+    padding:10px 12px;background:var(--paper-dark);flex:1 1 240px;
+  }
+  .type-row label{
+    font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);
+    display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;
+  }
+  .type-row input[type=checkbox]{accent-color:var(--red);width:15px;height:15px;cursor:pointer;}
+  .type-row .count{display:flex;align-items:center;gap:6px;opacity:.4;pointer-events:none;transition:opacity .15s;}
+  .type-row.on .count{opacity:1;pointer-events:auto;}
+  .type-row input[type=number]{
+    width:52px;font-family:var(--mono);font-size:13px;padding:4px 6px;border:1px solid var(--rule);
+    border-radius:2px;background:var(--paper);color:var(--ink);
+  }
+  .type-row .count span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);}
+
+  .genbar{display:flex;align-items:center;gap:16px;margin-top:20px;}
+  .btn{
+    font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.03em;
+    padding:12px 22px;border-radius:2px;border:none;cursor:pointer;transition:transform .1s,background .15s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--red);color:#fff;}
+  .btn-primary:hover{background:var(--red-dark);}
+  .btn-primary:disabled{background:#B7AF97;cursor:not-allowed;}
+  .btn-outline{background:transparent;color:var(--board);border:1.5px solid var(--board);}
+  .btn-outline:hover{background:var(--board);color:var(--chalk);}
+  .total-count{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);}
+  .total-count b{color:var(--board);}
+
+  .status{font-family:var(--mono);font-size:12.5px;margin-top:14px;display:none;align-items:center;gap:8px;}
+  .status.show{display:flex;}
+  .status.err{color:var(--red-dark);}
+  .status.ok{color:var(--board);}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:.25;}50%{opacity:1;}}
+
+  .preview-head{display:flex;align-items:baseline;justify-content:space-between;margin:38px 0 14px;}
+  .preview-head h2{font-family:var(--mono);font-size:15px;color:var(--board);margin:0;}
+  .preview-head span{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);}
+
+  .papers{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:720px){.papers{grid-template-columns:1fr;}}
+
+  .paper{
+    background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:20px 20px 22px;
+    position:relative;overflow:hidden;max-height:420px;overflow-y:auto;
+  }
+  .paper-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px;}
+  .qitem{margin-bottom:16px;}
+  .qnum{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--board);}
+  .qtype{font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);border:1px solid var(--rule);border-radius:2px;padding:1px 5px;margin-left:6px;text-transform:uppercase;}
+  .qtext{font-size:14.5px;line-height:1.5;margin:4px 0 6px;}
+  .opts{margin:0;padding-left:0;list-style:none;font-size:13.5px;line-height:1.7;color:var(--ink-soft);}
+  .opts li::before{content:attr(data-letter) ") ";font-family:var(--mono);color:var(--ink);}
+  .ans{font-size:13.5px;color:var(--red-dark);font-weight:600;}
+  .src{font-size:12px;color:var(--ink-soft);font-style:italic;margin-top:3px;}
+  .blank-line{border-bottom:1px solid var(--rule);height:16px;margin:6px 0;}
+
+  .stamp{
+    position:absolute;top:16px;right:16px;width:92px;height:92px;border-radius:50%;
+    border:2.5px solid var(--red);color:var(--red);display:flex;align-items:center;justify-content:center;
+    text-align:center;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;
+    transform:rotate(-14deg);opacity:.55;line-height:1.25;pointer-events:none;
+  }
+
+  .downloads{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;}
+  .note{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);margin-top:10px;line-height:1.6;}
+  .hidden{display:none;}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Doc → Quiz</div>
+  <h1>Turn any document into a graded exam.</h1>
+  <p class="lede">Upload a PDF or paste text. Pick your question types and counts. Every answer is pulled straight from your source — nothing invented, nothing from outside the document.</p>
+
+  <div class="card" data-step="Step 0 — Backend">
+    <h2>YOUR BACKEND URL</h2>
+    <input type="text" id="backendInput" placeholder="https://quiz-proxy.your-subdomain.workers.dev" style="width:100%;font-family:var(--mono);font-size:12.5px;padding:8px 10px;border:1px solid var(--rule);border-radius:2px;background:var(--paper);color:var(--ink);">
+    <p class="note">This page calls your own small server, which holds your Anthropic API key and never exposes it to visitors. See <code>quiz-proxy-worker.js</code> for a free Cloudflare Worker you can deploy in a few minutes — paste the URL it gives you here. Anyone with a link to this page can then use it, no account or install required on their end.</p>
+  </div>
+
+  <div class="card" data-step="Step 1 — Source">
+    <h2>WHERE'S THE MATERIAL COMING FROM?</h2>
+    <div class="tabs">
+      <div class="tab active" id="tabUpload">Upload PDF / TXT</div>
+      <div class="tab" id="tabPaste">Paste text</div>
+    </div>
+    <div id="paneUpload">
+      <div class="dropzone" id="dropzone">
+        Drop a <strong>.pdf</strong> or <strong>.txt</strong> file here, or click to browse
+        <input type="file" id="fileInput" accept=".pdf,.txt" class="hidden">
+      </div>
+      <div id="filepillWrap"></div>
+    </div>
+    <div id="panePaste" class="hidden">
+      <textarea id="pasteArea" placeholder="Paste your document text here..."></textarea>
+    </div>
+  </div>
+
+  <div class="card" data-step="Step 2 — Spec">
+    <h2>QUESTION TYPES &amp; COUNTS</h2>
+    <div class="types">
+      <div class="type-row" data-type="mcq">
+        <label><input type="checkbox" class="typeCheck" checked> Multiple choice</label>
+        <div class="count"><input type="number" class="typeCount" value="5" min="1" max="30"><span>questions</span></div>
+      </div>
+      <div class="type-row" data-type="short">
+        <label><input type="checkbox" class="typeCheck"> Short answer</label>
+        <div class="count"><input type="number" class="typeCount" value="3" min="1" max="30"><span>questions</span></div>
+      </div>
+      <div class="type-row" data-type="long">
+        <label><input type="checkbox" class="typeCheck"> Long answer</label>
+        <div class="count"><input type="number" class="typeCount" value="2" min="1" max="30"><span>questions</span></div>
+      </div>
+    </div>
+    <div class="genbar">
+      <button class="btn btn-primary" id="genBtn">Generate exam</button>
+      <span class="total-count" id="totalCount">Total: <b>5</b> questions</span>
+    </div>
+    <div class="status" id="statusLine"><div class="dot"></div><span id="statusText"></span></div>
+  </div>
+
+  <div id="previewSection" class="hidden">
+    <div class="preview-head">
+      <h2>Preview</h2>
+      <span id="sourceMeta"></span>
+    </div>
+    <div class="papers">
+      <div class="paper" id="qPaper">
+        <div class="paper-title">Exam paper</div>
+        <div id="qList"></div>
+      </div>
+      <div class="paper" id="aPaper">
+        <div class="stamp">ANSWER<br>KEY<br>· SOURCED ·</div>
+        <div class="paper-title">Answer key</div>
+        <div id="aList"></div>
+      </div>
+    </div>
+    <div class="downloads">
+      <button class="btn btn-outline" id="dlQ">Download question PDF</button>
+      <button class="btn btn-outline" id="dlA">Download answer PDF</button>
+    </div>
+    <div id="linkFallback" class="note hidden"></div>
+    <p class="note">Every answer below is sourced only from the uploaded document. If a section of the document didn't support a clean question, it was skipped rather than filled in from outside knowledge.</p>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let docText = '';
+let docName = '';
+let quizData = null;
+
+// ---- tabs ----
+const tabUpload = document.getElementById('tabUpload');
+const tabPaste = document.getElementById('tabPaste');
+const paneUpload = document.getElementById('paneUpload');
+const panePaste = document.getElementById('panePaste');
+tabUpload.onclick = () => { tabUpload.classList.add('active'); tabPaste.classList.remove('active'); paneUpload.classList.remove('hidden'); panePaste.classList.add('hidden'); };
+tabPaste.onclick = () => { tabPaste.classList.add('active'); tabUpload.classList.remove('active'); panePaste.classList.remove('hidden'); paneUpload.classList.add('hidden'); };
+
+// ---- file upload ----
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const filepillWrap = document.getElementById('filepillWrap');
+
+dropzone.onclick = () => fileInput.click();
+dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('drag'); };
+dropzone.ondragleave = () => dropzone.classList.remove('drag');
+dropzone.ondrop = (e) => { e.preventDefault(); dropzone.classList.remove('drag'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); };
+fileInput.onchange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); };
+
+async function handleFile(file) {
+  setStatus('Reading ' + file.name + '...', false);
+  try {
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(it => it.str).join(' ') + '\n\n';
+      }
+      docText = text.trim();
+    } else {
+      docText = await file.text();
+    }
+    docName = file.name;
+    filepillWrap.innerHTML = '';
+    const pill = document.createElement('div');
+    pill.className = 'filepill';
+    pill.innerHTML = '<span>' + file.name + ' · ' + docText.split(/\s+/).length + ' words</span>';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.onclick = () => { docText = ''; docName = ''; filepillWrap.innerHTML = ''; };
+    pill.appendChild(closeBtn);
+    filepillWrap.appendChild(pill);
+    clearStatus();
+  } catch (err) {
+    setStatus('Could not read that file: ' + err.message, true);
+  }
+}
+
+// ---- type rows ----
+const typeRows = document.querySelectorAll('.type-row');
+function updateTotal() {
+  let total = 0;
+  typeRows.forEach(row => {
+    const on = row.querySelector('.typeCheck').checked;
+    row.classList.toggle('on', on);
+    if (on) total += parseInt(row.querySelector('.typeCount').value || '0', 10);
+  });
+  document.getElementById('totalCount').innerHTML = 'Total: <b>' + total + '</b> questions';
+  return total;
+}
+typeRows.forEach(row => {
+  row.querySelector('.typeCheck').addEventListener('change', updateTotal);
+  row.querySelector('.typeCount').addEventListener('input', updateTotal);
+});
+updateTotal();
+
+// ---- status ----
+function setStatus(msg, isErr) {
+  const line = document.getElementById('statusLine');
+  const text = document.getElementById('statusText');
+  line.classList.add('show');
+  line.classList.toggle('err', !!isErr);
+  line.classList.toggle('ok', !isErr);
+  text.textContent = msg;
+}
+function clearStatus() {
+  document.getElementById('statusLine').classList.remove('show');
+}
+
+// ---- generate ----
+document.getElementById('genBtn').onclick = async () => {
+  const pasteText = document.getElementById('pasteArea').value.trim();
+  const sourceText = (panePaste.classList.contains('hidden')) ? docText : pasteText;
+
+  if (!sourceText || sourceText.length < 40) {
+    setStatus('Add a document with enough text to write questions from.', true);
+    return;
+  }
+
+  const spec = [];
+  typeRows.forEach(row => {
+    if (row.querySelector('.typeCheck').checked) {
+      spec.push({ type: row.dataset.type, count: parseInt(row.querySelector('.typeCount').value || '0', 10) });
+    }
+  });
+  const total = spec.reduce((a, s) => a + s.count, 0);
+  if (spec.length === 0 || total === 0) {
+    setStatus('Select at least one question type with a count above zero.', true);
+    return;
+  }
+
+  const backendUrl = document.getElementById('backendInput').value.trim().replace(/\/$/, '');
+  if (!backendUrl) {
+    setStatus('Paste your backend URL above first (see quiz-proxy-worker.js).', true);
+    return;
+  }
+
+  const genBtn = document.getElementById('genBtn');
+  genBtn.disabled = true;
+  setStatus('Reading the document and drafting questions...', false);
+
+  const specText = spec.map(s => s.count + ' ' + s.type + ' question(s)').join(', ');
+
+  const systemPrompt = `You are a strict exam-writing assistant. You write quiz questions and answers using ONLY the document text the user gives you. Never use outside knowledge, never invent facts not present in the document. If the document does not contain enough distinct material to support the requested count for a type, generate fewer high-quality questions of that type instead of padding with generic or outside content.
+
+Question type definitions:
+- mcq: multiple choice, exactly 4 options, one correct.
+- short: a question answerable in one short sentence or phrase.
+- long: a question requiring a multi-sentence explanatory answer, still fully grounded in the document.
+
+Respond with ONLY valid JSON (no markdown fences, no commentary, no preamble) matching exactly this schema:
+{"questions":[{"id":1,"type":"mcq|short|long","question":"...","options":["...","...","...","..."],"answer":"...","source_quote":"short quote or close paraphrase from the document that supports this answer"}]}
+For non-mcq types, omit the "options" field entirely. The "answer" for mcq must exactly match one of the options. Keep "source_quote" under 25 words.`;
+
+  const userPrompt = `DOCUMENT TEXT:\n"""\n${sourceText.slice(0, 60000)}\n"""\n\nGenerate: ${specText}. Return JSON only.`;
+
+  try {
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemPrompt, userPrompt })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data && data.error ? data.error : ('Backend returned ' + response.status));
+    }
+    const raw = (data && data.text) ? data.text.trim() : '';
+    const clean = raw.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '').trim();
+    const parsed = JSON.parse(clean);
+    if (!parsed.questions || !parsed.questions.length) throw new Error('No questions returned.');
+    quizData = parsed.questions;
+    docName = docName || 'Pasted text';
+    renderPreview();
+    setStatus('Generated ' + quizData.length + ' question(s), sourced from the document.', false);
+  } catch (err) {
+    const hint = (err.message === 'Failed to fetch')
+      ? ' — check that the backend URL above is correct and your Worker is deployed.'
+      : '';
+    setStatus('Generation failed: ' + err.message + hint, true);
+  } finally {
+    genBtn.disabled = false;
+  }
+};
+
+// ---- preview ----
+function renderPreview() {
+  const qList = document.getElementById('qList');
+  const aList = document.getElementById('aList');
+  qList.innerHTML = '';
+  aList.innerHTML = '';
+  document.getElementById('sourceMeta').textContent = docName ? ('Source: ' + docName) : '';
+
+  quizData.forEach((q, idx) => {
+    const n = idx + 1;
+    const qDiv = document.createElement('div');
+    qDiv.className = 'qitem';
+    let inner = '<span class="qnum">Q' + n + '.</span><span class="qtype">' + q.type + '</span><div class="qtext">' + escapeHtml(q.question) + '</div>';
+    if (q.type === 'mcq' && Array.isArray(q.options)) {
+      inner += '<ul class="opts">' + q.options.map((o, i) => '<li data-letter="' + String.fromCharCode(65 + i) + '">' + escapeHtml(o) + '</li>').join('') + '</ul>';
+    } else {
+      inner += '<div class="blank-line"></div>' + (q.type === 'long' ? '<div class="blank-line"></div><div class="blank-line"></div>' : '');
+    }
+    qDiv.innerHTML = inner;
+    qList.appendChild(qDiv);
+
+    const aDiv = document.createElement('div');
+    aDiv.className = 'qitem';
+    aDiv.innerHTML = '<span class="qnum">Q' + n + '.</span><span class="qtype">' + q.type + '</span>' +
+      '<div class="ans">' + escapeHtml(q.answer) + '</div>' +
+      (q.source_quote ? '<div class="src">Source: "' + escapeHtml(q.source_quote) + '"</div>' : '');
+    aList.appendChild(aDiv);
+  });
+
+  document.getElementById('previewSection').classList.remove('hidden');
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---- PDF export ----
+function newDoc() {
+  const { jsPDF } = window.jspdf;
+  return new jsPDF({ unit: 'pt', format: 'a4' });
+}
+function addHeader(doc, title, sub) {
+  const w = doc.internal.pageSize.getWidth();
+  doc.setFont('courier', 'bold'); doc.setFontSize(16); doc.setTextColor(27, 58, 47);
+  doc.text(title, 48, 54);
+  doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(90, 90, 90);
+  doc.text(sub, 48, 70);
+  doc.setDrawColor(200, 195, 174); doc.line(48, 80, w - 48, 80);
+  return 104;
+}
+function pageBreakIfNeeded(doc, y, margin) {
+  if (y > doc.internal.pageSize.getHeight() - margin) {
+    doc.addPage();
+    return 56;
+  }
+  return y;
+}
+
+function buildQuestionDoc() {
+  const doc = newDoc();
+  let y = addHeader(doc, 'EXAM', 'Source: ' + (docName || 'Pasted text') + '  ·  ' + quizData.length + ' questions');
+  const marginBottom = 60, left = 48, width = doc.internal.pageSize.getWidth() - 96;
+  quizData.forEach((q, idx) => {
+    y = pageBreakIfNeeded(doc, y, marginBottom);
+    doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(31, 42, 36);
+    doc.text('Q' + (idx + 1) + '. [' + q.type.toUpperCase() + ']', left, y);
+    y += 16;
+    doc.setFont('times', 'normal'); doc.setFontSize(11);
+    const lines = doc.splitTextToSize(q.question, width);
+    lines.forEach(line => { y = pageBreakIfNeeded(doc, y, marginBottom); doc.text(line, left, y); y += 15; });
+    if (q.type === 'mcq' && Array.isArray(q.options)) {
+      q.options.forEach((o, i) => {
+        y = pageBreakIfNeeded(doc, y, marginBottom);
+        const optLines = doc.splitTextToSize(String.fromCharCode(65 + i) + ') ' + o, width - 16);
+        optLines.forEach(l => { doc.text(l, left + 16, y); y += 14; });
+      });
+    } else {
+      const blanks = q.type === 'long' ? 3 : 1;
+      for (let b = 0; b < blanks; b++) {
+        y = pageBreakIfNeeded(doc, y, marginBottom);
+        doc.setDrawColor(180); doc.line(left, y + 8, left + width, y + 8); y += 22;
+      }
+    }
+    y += 12;
+  });
+  return doc;
+}
+
+function buildAnswerDoc() {
+  const doc = newDoc();
+  let y = addHeader(doc, 'ANSWER KEY', 'Source: ' + (docName || 'Pasted text') + '  ·  answers sourced from document');
+  const marginBottom = 60, left = 48, width = doc.internal.pageSize.getWidth() - 96;
+  quizData.forEach((q, idx) => {
+    y = pageBreakIfNeeded(doc, y, marginBottom);
+    doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(31, 42, 36);
+    doc.text('Q' + (idx + 1) + '. [' + q.type.toUpperCase() + ']', left, y);
+    y += 16;
+    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(142, 44, 44);
+    const ansLines = doc.splitTextToSize(String(q.answer), width);
+    ansLines.forEach(line => { y = pageBreakIfNeeded(doc, y, marginBottom); doc.text(line, left, y); y += 15; });
+    if (q.source_quote) {
+      doc.setFont('times', 'italic'); doc.setFontSize(9.5); doc.setTextColor(90, 90, 90);
+      const srcLines = doc.splitTextToSize('Source: "' + q.source_quote + '"', width);
+      srcLines.forEach(line => { y = pageBreakIfNeeded(doc, y, marginBottom); doc.text(line, left, y); y += 13; });
+    }
+    y += 14;
+  });
+  return doc;
+}
+
+// Some sandboxed artifact environments silently block a programmatic
+// doc.save() click. To be safe: try the auto-download, then ALWAYS also
+// surface a visible link (blob URL) the user can click or right-click ->
+// "Save link as", plus open it in a new tab as a second fallback.
+function deliverPdf(doc, filename) {
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  try { window.open(url, '_blank'); } catch (e) { /* popup blocked, link fallback below still works */ }
+
+  const fallback = document.getElementById('linkFallback');
+  fallback.classList.remove('hidden');
+  const existing = document.getElementById('link-' + filename);
+  const linkHtml = 'If "' + filename + '" didn\'t download automatically, <a id="link-' + filename + '" href="' + url + '" download="' + filename + '" target="_blank" style="color:var(--red-dark);font-weight:600;">click here to open / save it</a>.';
+  if (existing) {
+    existing.parentElement.outerHTML = '<div>' + linkHtml + '</div>';
+  } else {
+    fallback.insertAdjacentHTML('beforeend', '<div>' + linkHtml + '</div>');
+  }
+}
+
+document.getElementById('dlQ').onclick = () => {
+  if (!quizData) return;
+  deliverPdf(buildQuestionDoc(), 'exam-questions.pdf');
+};
+
+document.getElementById('dlA').onclick = () => {
+  if (!quizData) return;
+  deliverPdf(buildAnswerDoc(), 'exam-answer-key.pdf');
+};
+</script>
