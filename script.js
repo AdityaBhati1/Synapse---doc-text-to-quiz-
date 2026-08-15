@@ -2,7 +2,7 @@
 // Hardcoded for hackathon speed — no input field, no backend. Anyone who
 // opens this file or the browser's dev tools can see this key, so keep the
 // repo private and delete/rotate the key after judging.
-const GEMINI_API_KEY = 'AQ.Ab8RN6KYt5biSFj4EGsmBlGM3_cttcJusMM_9vAi3jWQfzqoKw';
+const GEMINI_API_KEY = 'gemini key here';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
