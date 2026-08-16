@@ -1,8 +1,7 @@
 // Paste your Gemini API key here (get one free at aistudio.google.com/apikey).
-// Hardcoded for hackathon speed — no input field, no backend. Anyone who
-// opens this file or the browser's dev tools can see this key, so keep the
-// repo private and delete/rotate the key after judging.
-const GEMINI_API_KEY = 'PASTE_YOUR_GEMINI_API_KEY_HERE';
+// Hardcoded for hackathon speed — no input field, no backend.
+
+const GEMINI_API_KEY = 'AQ.Ab8RN6JO7mLwUDStdHU1Pfumn2XJy6JK8EoqeKeJIuf80wvyEg';
 
 // Documents longer than this are truncated before being sent — see the
 // truncation notice shown to the user below when this kicks in.
