@@ -286,21 +286,17 @@ For non-mcq types, omit the "options" field entirely. The "answer" for mcq must 
 
   try {
     const model = 'gemini-3.5-flash';
-    const response = await fetch(
-      `/api/generate`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY
-        },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { responseMimeType: 'application/json' }
-        })
-      }
-    );
+    // Replace the Google fetch block with this:
+const response = await fetch('/api/generate', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    systemPrompt: systemPrompt,
+    userPrompt: userPrompt
+  })
+});
     const data = await response.json();
     if (!response.ok) {
       throw new Error((data && data.error && data.error.message) ? data.error.message : ('Request failed (' + response.status + ')'));
