@@ -285,18 +285,22 @@ For non-mcq types, omit the "options" field entirely. The "answer" for mcq must 
     // Replace the Google fetch block with this:
 const response = await fetch('/api/generate', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    systemPrompt: systemPrompt,
-    userPrompt: userPrompt
-  })
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ systemPrompt, userPrompt })
 });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error((data && data.error && data.error.message) ? data.error.message : ('Request failed (' + response.status + ')'));
-    }
+
+// Check if the response is actually JSON before parsing
+const contentType = response.headers.get('content-type');
+if (!contentType || !contentType.includes('application/json')) {
+  const rawText = await response.text();
+  throw new Error(`Server returned non-JSON response (${response.status}): ${rawText.slice(0, 100)}`);
+}
+
+const data = await response.json();
+
+if (!response.ok) {
+  throw new Error(data.error || `Request failed with status ${response.status}`);
+}
     const raw = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
       ? data.candidates[0].content.parts.map(p => p.text || '').join('').trim()
       : '';
