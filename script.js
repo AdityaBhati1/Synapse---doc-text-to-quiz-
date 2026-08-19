@@ -237,10 +237,6 @@ document.getElementById('genBtn').onclick = async () => {
     return;
   }
 
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GEMINI_API_KEY_HERE') {
-    setStatus('Open script.js and paste your Gemini API key into GEMINI_API_KEY at the top.', true);
-    return;
-  }
 
   const genBtn = document.getElementById('genBtn');
   genBtn.disabled = true;
