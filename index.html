@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doc → Quiz</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Doc → Quiz</div>
+  <h1>Turn any document into a graded exam.</h1>
+  <p class="lede">Upload a PDF or paste text. Pick your question types and counts. Every answer is pulled straight from your source — nothing invented, nothing from outside the document.</p>
+
+  <div class="card" data-step="Step 1 — Source">
+    <h2>WHERE'S THE MATERIAL COMING FROM?</h2>
+    <div class="tabs">
+      <div class="tab active" id="tabUpload">Upload PDF / TXT</div>
+      <div class="tab" id="tabPaste">Paste text</div>
+    </div>
+    <div id="paneUpload">
+      <div class="dropzone" id="dropzone">
+        Drop a <strong>.pdf</strong> or <strong>.txt</strong> file here, or click to browse
+        <input type="file" id="fileInput" accept=".pdf,.txt" class="hidden">
+      </div>
+      <div id="filepillWrap"></div>
+    </div>
+    <div id="panePaste" class="hidden">
+      <textarea id="pasteArea" placeholder="Paste your document text here..."></textarea>
+    </div>
+  </div>
+
+  <div class="card" data-step="Step 2 — Spec">
+    <h2>QUESTION TYPES &amp; COUNTS</h2>
+    <div class="types">
+      <div class="type-row" data-type="mcq">
+        <label><input type="checkbox" class="typeCheck" checked> Multiple choice</label>
+        <div class="count"><input type="number" class="typeCount" value="5" min="1" max="30"><span>questions</span></div>
+      </div>
+      <div class="type-row" data-type="short">
+        <label><input type="checkbox" class="typeCheck"> Short answer</label>
+        <div class="count"><input type="number" class="typeCount" value="3" min="1" max="30"><span>questions</span></div>
+      </div>
+      <div class="type-row" data-type="long">
+        <label><input type="checkbox" class="typeCheck"> Long answer</label>
+        <div class="count"><input type="number" class="typeCount" value="2" min="1" max="30"><span>questions</span></div>
+      </div>
+    </div>
+
+    <h2 style="margin-top:20px;">DIFFICULTY</h2>
+    <div class="tabs" id="difficultyTabs">
+      <div class="tab" data-difficulty="easy">Easy</div>
+      <div class="tab active" data-difficulty="medium">Medium</div>
+      <div class="tab" data-difficulty="hard">Hard</div>
+      <div class="tab" data-difficulty="mixed">Mixed</div>
+    </div>
+
+    <div class="memory-badge hidden" id="memoryBadge">
+      <span id="memoryText"></span>
+      <button type="button" id="clearMemoryBtn">Clear history</button>
+    </div>
+
+    <div class="genbar">
+      <button class="btn btn-primary" id="genBtn">Generate exam</button>
+      <span class="total-count" id="totalCount">Total: <b>5</b> questions</span>
+    </div>
+    <div class="status" id="statusLine"><div class="dot"></div><span id="statusText"></span></div>
+    <p class="note hidden" id="truncateNote"></p>
+  </div>
+
+  <div id="previewSection" class="hidden">
+    <div class="preview-head">
+      <h2>Preview</h2>
+      <span id="sourceMeta"></span>
+    </div>
+    <div class="papers">
+      <div class="paper" id="qPaper">
+        <div class="paper-title">Exam paper</div>
+        <div id="qList"></div>
+      </div>
+      <div class="paper" id="aPaper">
+        <div class="stamp">ANSWER<br>KEY<br>· SOURCED ·</div>
+        <div class="paper-title">Answer key</div>
+        <div id="aList"></div>
+      </div>
+    </div>
+    <div class="downloads">
+      <button class="btn btn-outline" id="dlQ">Download question PDF</button>
+      <button class="btn btn-outline" id="dlA">Download answer PDF</button>
+    </div>
+    <div id="linkFallback" class="note hidden"></div>
+    <p class="note">Every answer below is sourced only from the uploaded document. If a section of the document didn't support a clean question, it was skipped rather than filled in from outside knowledge.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
